@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La Cocina</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f7f3ef;color:#2d2521;padding-bottom:82px}
+header{background:#4d1720;color:#fff;padding:24px;text-align:center}
+main{max-width:760px;margin:auto;padding:15px}
+.card{background:#fff;margin:12px 0;padding:16px;border-radius:14px;box-shadow:0 2px 8px #0001}
+.price{font-weight:bold;margin:8px 0}.desc{color:#665c57;font-size:14px;line-height:1.4}
+button{background:#4d1720;color:#fff;border:0;border-radius:9px;padding:11px 14px;font-weight:bold}
+button.secondary{background:#777}.reserveBtn{margin-top:14px;background:#fff;color:#4d1720;border:1px solid #fff}.full{width:100%;margin-top:10px}
+select,input{width:100%;box-sizing:border-box;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px}
+.cart{position:fixed;bottom:0;left:0;right:0;background:#4d1720;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:4}
+.modal{display:none;position:fixed;inset:0;background:#0008;padding:18px;z-index:10;overflow:auto}
+.box{background:#fff;max-width:560px;margin:25px auto;padding:20px;border-radius:16px}
+.close{float:right;background:#777}.row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.total{font-size:20px;font-weight:bold;margin:18px 0}
+</style>
+</head>
+<body>
+<header>
+<h1>La Cocina</h1>
+<div>Cardápio • Pedidos e reservas</div>
+<button class="reserveBtn" onclick="openReservation()">📅 Fazer uma reserva</button>
+</header>
+<main id="menu"></main>
+<div class="cart"><span id="cartInfo">0 itens • R$ 0,00</span><button onclick="openCart()">Ver pedido</button></div>
+<div class="modal" id="modal"><div class="box"><button class="close" onclick="closeModal()">Fechar</button><div id="modalContent"></div></div></div>
+
+<script>
+const items=[
+["Entradas","Trio de brusquetas",21,"Massa italiana crocante com tomate, parmesão e manjericão; calabresa e muçarela; gorgonzola e provolone defumado."],
+["Entradas","Salada de folhas verdes",24,"Folhas verdes, tomate-cereja, manga, figo, amêndoas e emulsão de balsâmico."],
+["Entradas","Torradinhas artesanais com guacamole",21,"Torradas artesanais crocantes com guacamole de abacate, cebola roxa, pimentão verde e tomate."],
+["Principais","Pappardelle pesto + filé",79,"Pappardelle artesanal ao pesto de manjericão e nozes, acompanhado de dois medalhões de filé mignon."],
+["Principais","Pappardelle quatro queijos e funghi + filé",79,"Pappardelle artesanal ao molho de quatro queijos e funghi, com dois medalhões de filé mignon."],
+["Principais","Pappardelle ao tomate + filé",79,"Pappardelle artesanal ao molho de tomate, vinho branco, alho e manjericão, com dois medalhões de filé mignon."],
+["Principais","Espaguete com iscas de filé",79,"Espaguete com iscas de filé mignon, molho de tomate, vinho branco, azeitonas e alcaparras."],
+["Principais","Talharim na manteiga + filé",79,"Talharim artesanal na manteiga, salsa, pimenta e parmesão, acompanhado de filé mignon."],
+["Principais","Talharim na manteiga + salmão",96,"Talharim artesanal na manteiga, salsa, pimenta e parmesão, acompanhado de salmão grelhado."],
+["Principais","Talharim com camarão",96,"Talharim artesanal com camarões, molho branco e tomate, vinho branco e cebola."],
+["Principais","Legumes grelhados + entrecot quatro queijos",82,"Legumes grelhados com cebola, pimentão e batata, acompanhados de entrecot ao molho quatro queijos."],
+["Principais","Risoto de tomate seco + entrecot quatro queijos",82,"Risoto cremoso de tomate seco acompanhado de entrecot ao molho quatro queijos."],
+["Principais","Risoto de camarão",96,"Risoto cremoso de quatro queijos com camarões grelhados."],
+["Principais","Risoto funghi + filé",79,"Risoto cremoso de funghi e parmesão, acompanhado de filé mignon."],
+["Principais","Pappardelle ragu",79,"Pappardelle artesanal com ragù de ossobuco e parmesão."],
+["Principais","Risoto quatro queijos + filé",79,"Risoto cremoso de quatro queijos, acompanhado de filé mignon."],
+["Principais","Risoto pera e gorgonzola + filé",79,"Risoto cremoso de pera e gorgonzola, acompanhado de filé mignon."],
+["Principais","Risoto milanês + filé",79,"Risoto cremoso de açafrão e parmesão, acompanhado de filé mignon."],
+["Principais","Risoto brie e cogumelos + filé",79,"Risoto cremoso de queijo brie e cogumelos, acompanhado de filé mignon."],
+["Principais","Salmão com vinagrete de abacate",96,"Salmão grelhado com vinagrete de abacate, cebola roxa, tomate, pimentão e folhas verdes."],
+["Principais","Risoto de abóbora cabotiá + filé",79,"Risoto cremoso de abóbora cabotiá e parmesão, acompanhado de filé mignon."],
+["Principais","Bacalhau Gomes de Sá",105,"Filé de bacalhau grelhado com batatas, ovos, azeitonas pretas, cebola, tomate e pimentões assados."],
+["Principais","Bacalhau com legumes assados",105,"Filé de bacalhau grelhado com batatas, cebola, tomate e pimentões assados."],
+["Principais","Salmão + camarões",112,"Salmão grelhado com camarões, salada fresca, manga e emulsão de limão."],
+["Principais","Salmão com musseline",96,"Salmão grelhado com berinjela, abobrinha e musseline de batata ou batata-doce."],
+["Sobremesas","Torta de nozes",32,"Torta artesanal de nozes com textura cremosa e delicada."],
+["Sobremesas","Tiramisù",32,"Camadas de creme aveludado, biscoito champanhe artesanal e cacau."],
+["Sobremesas","Crème brûlée",32,"Creme delicado de baunilha com crosta de açúcar caramelizado."],
+["Sobremesas","Torta doce de leite, nozes e chocolate belga",32,"Torta cremosa de doce de leite, nozes e chocolate belga."],
+["Sobremesas","Petit gâteau de doce de leite",32,"Bolinho quente de doce de leite com recheio cremoso."],
+["Sobremesas","Petit gâteau de chocolate belga",32,"Bolinho quente de chocolate belga com recheio cremoso."],
+["Bebidas","Heineken",13,"Cerveja Heineken. Escolha com álcool ou sem álcool."],
+["Bebidas","Stella",13,"Cerveja Stella Artois."],
+["Bebidas","Stella Gold",13,"Cerveja Stella Artois Gold."],
+["Bebidas","Corona",14,"Cerveja Corona. Escolha com álcool ou sem álcool."],
+["Bebidas","Patagônia",14,"Cerveja Patagonia. Escolha entre Weiss, Amber, IPA ou Bohemian."],
+["Bebidas","Água",7,"Água mineral. Escolha com gás ou sem gás."],
+["Bebidas","Água tônica",8,"Água tônica. Escolha normal ou zero."],
+["Bebidas","Coca-Cola",8,"Refrigerante Coca-Cola. Escolha normal ou zero."],
+["Bebidas","Guaraná",8,"Refrigerante Guaraná. Escolha normal ou zero."],
+["Bebidas","Pepsi",8,"Refrigerante Pepsi. Escolha normal ou zero."],
+["Bebidas","Energético",17,"Energético gelado."],
+["Bebidas","Suco de laranja",15,"Suco de laranja." ]
+];
+const pizzas=[
+["Marguerita",95,"Molho de tomate, muçarela, tomate e manjericão."],
+["Calabresa",95,"Molho de tomate, muçarela e calabresa."],
+["Portuguesa",95,"Combinação clássica de molho de tomate, muçarela e ingredientes da casa."],
+["Parmesão",95,"Molho de tomate, muçarela e parmesão."],
+["Presunto e gorgonzola",100,"Molho de tomate, muçarela, presunto e gorgonzola."],
+["Romano",95,"Pizza de inspiração romana com ingredientes selecionados da casa."],
+["Caprese",95,"Tomate, muçarela de búfala e manjericão. Opcional com pesto."],
+["Marinara",95,"Molho de tomate, tomate, alho e ervas. Opcional com pesto."],
+["Lombo suíno e pêssego",95,"Lombo suíno e pêssego em uma combinação agridoce."],
+["Bacon e alho poró",100,"Bacon e alho-poró sobre base cremosa e queijo."],
+["Filé, figo e gorgonzola",115,"Filé mignon, figo e gorgonzola em combinação agridoce."],
+["Camarão",120,"Camarões preparados com ingredientes selecionados da casa."],
+["Ossobuco",115,"Ossobuco desfiado em molho de tomate e queijo."],
+["Filé e cebola caramelizada",115,"Filé mignon e cebola caramelizada em combinação agridoce."],
+["Vegetariana",100,"Seleção de vegetais frescos sobre molho de tomate e queijo."],
+["Tomate cereja + muçarela de búfala",115,"Tomate-cereja e muçarela de búfala. Opcional com pesto."],
+["Cogumelo salteado + presunto parma",125,"Cogumelos salteados e presunto Parma em combinação delicada." ]
+];
+let cart=[];
+const money=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+function render(){
+ let h="";
+ ["Entradas","Principais"].forEach(cat=>{
+   h+="<h2>"+cat+"</h2>";
+   items.filter(x=>x[0]===cat).forEach((x,i)=>{
+     const realIndex=items.indexOf(x);
+     h+=`<div class="card"><b>${x[1]}</b><div class="desc">${x[3]}</div><div class="price">${money(x[2])}</div><button onclick="add(${realIndex})">Adicionar</button></div>`;
+   });
+ });
+ h+="<h2>Pizzas</h2>";
+ pizzas.forEach((p,i)=>h+=`<div class="card"><b>Pizza ${p[0]}</b><div class="desc">${p[2]}</div><div class="price">${money(p[1])}</div><button onclick="pizza(${i})">Adicionar</button></div>`);
+ ["Sobremesas","Bebidas"].forEach(cat=>{
+   h+="<h2>"+cat+"</h2>";
+   items.filter(x=>x[0]===cat).forEach(x=>{
+     const realIndex=items.indexOf(x);
+     h+=`<div class="card"><b>${x[1]}</b><div class="desc">${x[3]}</div><div class="price">${money(x[2])}</div><button onclick="add(${realIndex})">Adicionar</button></div>`;
+   });
+ });
+ document.getElementById("menu").innerHTML=h;
+}
+function openModal(h){document.getElementById("modalContent").innerHTML=h;document.getElementById("modal").style.display="block"}
+
+function setReservationMinDate(){
+ const el=document.getElementById("resDate");
+ if(!el) return;
+ const d=new Date();
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+ el.min=`${y}-${m}-${day}`;
+}
+
+function openReservation(){
+ const today=new Date();
+ const y=today.getFullYear(),m=String(today.getMonth()+1).padStart(2,"0"),d=String(today.getDate()).padStart(2,"0");
+ openModal(`
+   <h2>📅 Fazer uma reserva</h2>
+   <div class="card"><div class="desc">Escolha a data e o horário. Nossa equipe confirmará a reserva pelo WhatsApp.</div></div>
+   <label>Nome<input id="resName" placeholder="Seu nome"></label>
+   <label>WhatsApp<input id="resPhone" inputmode="tel" placeholder="(55) 99999-9999"></label>
+   <label>Data<input id="resDate" type="date" min="${y}-${m}-${d}"></label>
+   <label>Horário da reserva<select id="resTime"><option value="19h às 21h">19h às 21h</option><option value="21h às 23h">21h às 23h</option></select></label>
+   <label>Número de pessoas<input id="resPeople" type="number" min="1" max="30" placeholder="Ex.: 4"></label>
+   <label>Observação <span class="desc">(opcional)</span><input id="resNote" placeholder="Ex.: aniversário, mesa especial..."></label>
+   <button class="full" onclick="sendReservation()">Enviar solicitação de reserva pelo WhatsApp</button>
+ `);
+ setReservationMinDate();
+}
+
+async function saveReservationToPanel(payload){
+ try{
+   await fetch("/.netlify/functions/create-reservation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+ }catch(e){}
+}
+
+function sendReservation(){
+ const name=(document.getElementById("resName")?.value||"").trim();
+ const phone=(document.getElementById("resPhone")?.value||"").trim();
+ const date=(document.getElementById("resDate")?.value||"").trim();
+ const time=(document.getElementById("resTime")?.value||"").trim();
+ const people=(document.getElementById("resPeople")?.value||"").trim();
+ const note=(document.getElementById("resNote")?.value||"").trim();
+ if(!name){alert("Informe seu nome.");return}
+ if(!phone){alert("Informe seu WhatsApp.");return}
+ if(!date){alert("Escolha a data da reserva.");return}
+ if(!time){alert("Escolha o horário da reserva.");return}
+ if(!people){alert("Informe o número de pessoas.");return}
+ const dt=new Date(date+"T12:00:00");
+ const weekday=dt.getDay();
+ if(weekday===0 || weekday===1){alert("As reservas são de terça a sábado.");return}
+ const [yy,mm,dd]=date.split("-");
+ const dateBR=`${dd}/${mm}/${yy}`;
+ let msg="📅 *SOLICITAÇÃO DE RESERVA — LA COCINA*\n\n";
+ msg+="👤 *Nome:* "+name+"\n";
+ msg+="📱 *WhatsApp:* "+phone+"\n";
+ msg+="📆 *Data:* "+dateBR+"\n";
+ msg+="⏰ *Horário:* "+time+"\n";
+ msg+="👥 *Pessoas:* "+people+"\n";
+ if(note) msg+="📝 *Observação:* "+note+"\n";
+ msg+="\n⚠️ *Aguardando confirmação da equipe.*";
+ saveReservationToPanel({name,phone,date,dateBR,time,people:Number(people),note,status:"Aguardando",createdAt:new Date().toISOString()});
+ const whatsapp="5555997181726";
+ window.location.href="https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg);
+}
+function closeModal(){document.getElementById("modal").style.display="none"}
+function add(i){
+ let x=items[i],o="";
+ if(x[1].includes("filé") && !x[1].toLowerCase().includes("iscas"))o+='<label>Ponto da carne<select id="optA"><option>Ao ponto</option><option>Mal passado</option><option>Bem passado</option></select></label>';
+ if(x[1].includes("entrecot"))o+='<label>Ponto da carne<select id="optEntrecot"><option>Ao ponto</option><option>Mal passado</option><option>Bem passado</option></select></label>';
+ if(x[1].startsWith("Salmão"))o+='<label>Ponto do salmão<select id="optB"><option>Ponto da casa (mais molhadinho)</option><option>Ponto mais</option></select></label>';
+ if(x[1]=="Salmão com vinagrete de abacate")o+='<label>Escolha a fruta<select id="optC"><option>Manga</option><option>Figo</option><option>Manga + Figo</option></select></label>';
+ if(x[1]=="Salmão com musseline")o+='<label>Escolha a opção<select id="optD"><option>Batata</option><option>Batata-doce</option></select></label>';
+ if(x[1]=="Heineken"||x[1]=="Corona")o+='<label>Opção<select id="optE"><option>Com álcool</option><option>Sem álcool</option></select></label>';
+ if(x[1]=="Patagônia")o+='<label>Tipo<select id="optF"><option>Weiss</option><option>Amber</option><option>IPA</option><option>Bohemian</option></select></label>';
+ if(["Coca-Cola","Guaraná","Pepsi"].includes(x[1]))o+='<label>Opção<select id="optG"><option>Normal</option><option>Zero</option></select></label>';
+ if(x[1]=="Água")o+='<label>Opção<select id="optH"><option>Com gás</option><option>Sem gás</option></select></label>';
+ if(x[1]=="Água tônica")o+='<label>Opção<select id="optI"><option>Normal</option><option>Zero</option></select></label>';
+ openModal("<h2>"+x[1]+"</h2>"+o+'<button class="full" onclick="confirmAdd('+i+')">Adicionar ao pedido</button>');
+}
+function confirmAdd(i){
+ let x=items[i],opts=[...document.querySelectorAll("#modalContent select")].map(e=>e.value);
+ cart.push({name:x[1],price:x[2],opts,qty:1});closeModal();update();
+}
+function pizza(i){
+ let p=pizzas[i],opts2=pizzas.map((x,j)=>`<option value="${j}">${x[0]}</option>`).join("");
+ openModal(`<h2>Pizza ${p[0]}</h2>
+ <label>Formato<select id="fmt" onchange="toggleMix()"><option value="whole">Inteira</option><option value="half">1/2 pizza (sozinha)</option><option value="mix">1/2 + 1/2</option></select></label>
+ <div id="mixBox" style="display:none"><label>Segundo sabor<select id="flavor2">${opts2}</select></label></div>
+ <label>Corte<select id="cut"><option>Tradicional</option><option>Xadrez</option></select></label>
+ <label>Preparo<select id="bake"><option>Assada</option><option>Sem assar</option></select></label>
+ <button class="full" onclick="confirmPizza(${i})">Adicionar ao pedido</button>`);
+}
+function toggleMix(){document.getElementById("mixBox").style.display=document.getElementById("fmt").value=="mix"?"block":"none"}
+function confirmPizza(i){
+ let p=pizzas[i],fmt=document.getElementById("fmt").value,cut=document.getElementById("cut").value,bake=document.getElementById("bake").value;
+ let name,price,opts=[cut,bake];
+ if(fmt=="whole"){name="Pizza "+p[0];price=p[1];opts.unshift("Inteira")}
+ else if(fmt=="half"){name="1/2 pizza "+p[0];price=p[1]/2+5;opts.unshift("1/2 pizza sozinha","+ R$ 5 embalagem")}
+ else{let p2=pizzas[+document.getElementById("flavor2").value];name="1/2 "+p[0]+" + 1/2 "+p2[0];price=p[1]/2+p2[1]/2;opts.unshift("Meio a meio")}
+ cart.push({name,price,opts,qty:1});closeModal();update();
+}
+function total(){return cart.reduce((a,x)=>a+x.price*x.qty,0)}
+function update(){let q=cart.reduce((a,x)=>a+x.qty,0);document.getElementById("cartInfo").textContent=q+" "+(q==1?"item":"itens")+" • "+money(total())}
+function openCart(){
+ let h="<h2>Seu pedido</h2>";
+ if(!cart.length)h+="<p>Seu pedido está vazio.</p>";
+ cart.forEach((x,i)=>h+=`<div class="card"><div class="row"><b>${x.name}</b><b>${money(x.price*x.qty)}</b></div>
+ <div class="desc">${x.opts.join(" • ")}</div><button onclick="qty(${i},-1)">−</button> ${x.qty} <button onclick="qty(${i},1)">+</button></div>`);
+ h+=`<div class="total">Total: ${money(total())}</div>`;
+ if(cart.length)h+='<button class="full" onclick="checkout()">Fechar pedido e continuar para pagamento</button>';
+ openModal(h);
+}
+function qty(i,n){cart[i].qty+=n;if(cart[i].qty<=0)cart.splice(i,1);update();openCart()}
+function checkout(){
+ let h=`<h2>Finalizar pedido</h2>
+ <div class="card"><b>Resumo</b><div class="desc">${cart.map(x=>x.qty+"x "+x.name+" — "+money(x.price*x.qty)).join("<br>")}</div><div class="total">Subtotal: ${money(total())}</div></div>
+ <label>Como deseja receber?<select id="delivery" onchange="toggleAddress();calculateDelivery()">
+ <option value="delivery">Entrega</option><option value="pickup">Retirada — R. Buriti 38, Centro</option></select></label>
+ <label>Nome<input id="name" placeholder="Seu nome"></label>
+ <label>WhatsApp<input id="phone" placeholder="Seu WhatsApp"></label>
+ <div id="addressBox">
+ <label>CEP<input id="cep" inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="maskCep(this)" onblur="lookupCep()"></label>
+ <div id="addressFields" style="display:none">
+ <label>Endereço<input id="address" readonly></label><label>Bairro<input id="neighborhood" readonly></label>
+ <label>Cidade/UF<input id="cityuf" readonly></label><label>Número<input id="number" inputmode="numeric" placeholder="Número" oninput="calculateDelivery()"></label>
+ <label>Complemento<input id="complement" placeholder="Opcional"></label></div>
+ <div id="cepStatus" class="desc"></div></div>
+ <div id="deliveryTimeBox" class="card"><b>Horário da entrega</b><div id="deliveryTimeContent" class="desc">Informe o CEP e o número para definir o horário.</div></div>
+ <label>Forma de pagamento<select id="payment" onchange="paymentChanged()">
+ <option value="pix">Pix</option><option value="card">Cartão na entrega</option><option value="cash">Dinheiro</option></select></label>
+ <div id="pixBox" class="card"><b>Pagamento via Pix</b><div class="desc">Chave Pix: <strong>55999456798</strong></div><button type="button" class="full" onclick="copyPix()">Copiar chave Pix</button><div id="pixCopied" class="desc"></div></div>
+ <div id="cashBox" class="card" style="display:none">
+ <label>Troco
+ <select id="changeOption" onchange="changeOptionChanged()">
+ <option value="none">Não preciso de troco</option>
+ <option value="change">Preciso de troco</option></select></label>
+ <div id="changeField" style="display:none"><label>Troco para quanto?<input id="changeFor" type="number" step="0.01" placeholder="Ex.: 200,00"></label></div>
+ </div>
+ <div id="deliverySummary" class="card"><b>Entrega: informe o CEP</b></div>
+ <button class="full" onclick="finish()">Enviar pedido pelo WhatsApp</button>`;
+ openModal(h); updateDeliverySummary(); updateDeliveryTime(); paymentChanged();
+}
+
+function pad2(n){return String(n).padStart(2,"0");}
+function formatTime(d){return pad2(d.getHours())+":"+pad2(d.getMinutes());}
+function buildTimeOptions(){
+ const now=new Date();
+ const cutoff=new Date(now); cutoff.setHours(18,0,0,0);
+ if(now<=cutoff){
+   let first=new Date(now); first.setHours(19,45,0,0);
+   const options=[];
+   for(let i=0;i<12;i++){
+     const d=new Date(first.getTime()+i*30*60000);
+     options.push('<option value="'+formatTime(d)+'">'+formatTime(d)+'</option>');
+   }
+   return '<label>Escolha o horário<select id="deliveryTime">'+options.join('')+'</select></label><div class="desc">Pedidos feitos até 18h podem escolher o horário de entrega. Primeiro horário disponível: 19h45.</div>';
+ }
+ const eta=new Date(now.getTime()+45*60000);
+ return '<input id="deliveryTime" type="hidden" value="'+formatTime(eta)+'"><div class="desc"><b>Entrega prevista: '+formatTime(eta)+'</b><br>Pedidos feitos após 18h têm previsão de entrega 45 minutos após o pedido.</div>';
+}
+function updateDeliveryTime(){
+ const box=document.getElementById("deliveryTimeBox");
+ const content=document.getElementById("deliveryTimeContent");
+ if(!box||!content) return;
+ const mode=document.getElementById("delivery")?.value||"delivery";
+ if(mode!=="delivery"){
+   box.style.display="none";
+   return;
+ }
+ box.style.display="block";
+ content.innerHTML=buildTimeOptions();
+}
+function paymentChanged(){
+ const p=document.getElementById("payment")?.value;
+ const pix=document.getElementById("pixBox"), cash=document.getElementById("cashBox");
+ if(pix)pix.style.display=p==="pix"?"block":"none";
+ if(cash)cash.style.display=p==="cash"?"block":"none";
+ if(p!=="cash"){const f=document.getElementById("changeField");if(f)f.style.display="none";}
+}
+function changeOptionChanged(){
+ const f=document.getElementById("changeField");
+ if(f)f.style.display=document.getElementById("changeOption").value==="change"?"block":"none";
+}
+async function copyPix(){
+ try{await navigator.clipboard.writeText("55999456798");document.getElementById("pixCopied").textContent="Chave Pix copiada!";}
+ catch(e){document.getElementById("pixCopied").textContent="Chave: 55999456798";}
+}
+
+let deliveryFee=0;
+
+function maskCep(el){
+  let digits=(el.value||"").replace(/\D/g,"").slice(0,8);
+  el.value=digits.length>5 ? digits.slice(0,5)+"-"+digits.slice(5) : digits;
+}
+
+async function lookupCep(){
+  const input=document.getElementById("cep");
+  const status=document.getElementById("cepStatus");
+  const fields=document.getElementById("addressFields");
+  const cep=(input?.value||"").replace(/\D/g,"");
+
+  if(cep.length!==8){
+    if(status) status.textContent="Digite um CEP válido.";
+    return;
+  }
+
+  if(status) status.textContent="Consultando o CEP…";
+
+  try{
+    const response=await fetch("https://viacep.com.br/ws/"+cep+"/json/", {
+      method:"GET",
+      headers:{"Accept":"application/json"}
+    });
+    if(!response.ok) throw new Error("CEP");
+    const data=await response.json();
+    if(data.erro) throw new Error("CEP não encontrado");
+
+    document.getElementById("address").value=data.logradouro||"";
+    document.getElementById("neighborhood").value=data.bairro||"";
+    document.getElementById("cityuf").value=[data.localidade,data.uf].filter(Boolean).join(" / ");
+
+    if(fields) fields.style.display="block";
+    if(status) status.textContent="Endereço encontrado. Informe o número.";
+    deliveryFee=0;
+    updateDeliverySummary();
+  }catch(error){
+    if(fields) fields.style.display="none";
+    if(status) status.textContent="Não foi possível localizar o CEP. Tente novamente.";
+    deliveryFee=0;
+    updateDeliverySummary();
+  }
+}
+
+function toggleAddress(){
+  const delivery=document.getElementById("delivery");
+  const box=document.getElementById("addressBox");
+  if(box) box.style.display=delivery?.value==="delivery"?"block":"none";
+  deliveryFee=0;
+  updateDeliverySummary();
+  updateDeliveryTime();
+}
+
+async function calculateDelivery(){
+  const delivery=document.getElementById("delivery");
+  if(!delivery || delivery.value!=="delivery"){
+    deliveryFee=0;
+    updateDeliverySummary();
+    return;
+  }
+
+  const cep=(document.getElementById("cep")?.value||"").replace(/\D/g,"");
+  const number=(document.getElementById("number")?.value||"").trim();
+
+  if(cep.length!==8 || !number){
+    deliveryFee=0;
+    updateDeliverySummary();
+    return;
+  }
+
+  try{
+    const response=await fetch("https://viacep.com.br/ws/"+cep+"/json/");
+    const data=await response.json();
+    if(data.erro) throw new Error();
+
+    const customer=encodeURIComponent(
+      [data.logradouro,number,data.bairro,data.localidade,data.uf,"Brasil"]
+      .filter(Boolean).join(", ")
+    );
+    const restaurant=encodeURIComponent(
+      "Rua Buriti, 38, Centro, Santa Rosa, RS, Brasil"
+    );
+
+    const [a,b]=await Promise.all([
+      fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="+customer),
+      fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="+restaurant)
+    ]);
+
+    const customerResult=await a.json();
+    const restaurantResult=await b.json();
+
+    if(!customerResult.length || !restaurantResult.length) throw new Error();
+
+    const R=6371, rad=Math.PI/180;
+    const lat1=Number(customerResult[0].lat)*rad;
+    const lon1=Number(customerResult[0].lon)*rad;
+    const lat2=Number(restaurantResult[0].lat)*rad;
+    const lon2=Number(restaurantResult[0].lon)*rad;
+    const dlat=lat2-lat1, dlon=lon2-lon1;
+    const h=Math.sin(dlat/2)**2+
+      Math.cos(lat1)*Math.cos(lat2)*Math.sin(dlon/2)**2;
+    const km=2*R*Math.asin(Math.sqrt(h));
+
+    deliveryFee=km<=3?12:15;
+    const box=document.getElementById("deliverySummary");
+    if(box){
+      box.innerHTML="<b>Entrega: "+money(deliveryFee)+
+        "</b><div class='desc'>Distância aproximada: "+
+        km.toFixed(1).replace(".",",")+" km • Total: "+
+        money(total()+deliveryFee)+"</div>";
+    }
+  }catch(error){
+    deliveryFee=0;
+    const box=document.getElementById("deliverySummary");
+    if(box) box.innerHTML=
+      "<b>Não consegui calcular a distância.</b>"+
+      "<div class='desc'>Confira o CEP e o número.</div>";
+  }
+}
+
+function updateDeliverySummary(){
+  const box=document.getElementById("deliverySummary");
+  if(!box) return;
+  const delivery=document.getElementById("delivery");
+  if(delivery?.value==="pickup"){
+    deliveryFee=0;
+    box.innerHTML="<b>Retirada: R$ 0,00</b><div class='desc'>R. Buriti, 38 — Centro</div>";
+  }else if(deliveryFee){
+    box.innerHTML="<b>Entrega: "+money(deliveryFee)+
+      "</b><div class='desc'>Total do pedido: "+
+      money(total()+deliveryFee)+"</div>";
+  }else{
+    box.innerHTML="<b>Entrega: informe o CEP e o número</b>";
+  }
+}
+
+async function saveOrderToPanel(payload){
+ try{
+   await fetch("/.netlify/functions/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+ }catch(e){}
+}
+
+function finish(){
+ const mode=document.getElementById("delivery")?.value||"delivery";
+ if(mode==="delivery"){
+  const cep=(document.getElementById("cep")?.value||"").replace(/\D/g,"");
+  const num=(document.getElementById("number")?.value||"").trim();
+  if(cep.length!==8 || !num){alert("Informe o CEP e o número para calcular a entrega.");return}
+  if(!deliveryFee){alert("Aguarde o cálculo da taxa de entrega.");return}
+ }
+ const payment=document.getElementById("payment")?.value;
+ const deliveryTime=document.getElementById("deliveryTime")?.value||"";
+ if(mode==="delivery" && !deliveryTime){alert("Selecione o horário da entrega.");return}
+ if(payment==="cash"){
+  const opt=document.getElementById("changeOption")?.value;
+  if(opt==="change"){
+   const raw=(document.getElementById("changeFor")?.value||"").replace(",",".");
+   const value=parseFloat(raw);
+   if(!value){alert("Informe para quanto precisa de troco.");return}
+   if(value < total()+deliveryFee){alert("O valor informado para o troco é menor que o total do pedido.");return}
+  }
+ }
+
+ const name=(document.getElementById("name")?.value||"").trim();
+ const phone=(document.getElementById("phone")?.value||"").trim();
+ if(!name){alert("Informe seu nome.");return}
+ if(!phone){alert("Informe seu WhatsApp.");return}
+
+ const paymentLabels={pix:"Pix",card:"Cartão na entrega",cash:"Dinheiro"};
+ let msg="🍽️ *NOVO PEDIDO — LA COCINA*\n\n";
+ msg+="👤 *Cliente:* "+name+"\n";
+ msg+="📱 *WhatsApp:* "+phone+"\n\n";
+ msg+="*ITENS DO PEDIDO*\n";
+ cart.forEach(x=>{
+   msg+="• "+x.qty+"x "+x.name+" — "+money(x.price*x.qty)+"\n";
+   if(x.opts?.length) msg+="  ↳ "+x.opts.join(" • ")+"\n";
+ });
+ msg+="\n💰 *Subtotal:* "+money(total())+"\n";
+ if(mode==="delivery"){
+   const address=document.getElementById("address")?.value||"";
+   const neighborhood=document.getElementById("neighborhood")?.value||"";
+   const cityuf=document.getElementById("cityuf")?.value||"";
+   const number=document.getElementById("number")?.value||"";
+   const complement=(document.getElementById("complement")?.value||"").trim();
+   const cep=document.getElementById("cep")?.value||"";
+   msg+="🚗 *ENTREGA*\n";
+   msg+="📍 "+address+", "+number+(complement?" — "+complement:"")+"\n";
+   msg+="   "+neighborhood+" — "+cityuf+"\n";
+   msg+="   CEP: "+cep+"\n";
+   msg+="🚗 *Taxa de entrega:* "+money(deliveryFee)+"\n";
+   msg+="⏰ *Entrega prevista:* "+deliveryTime+"\n";
+ }else{
+   msg+="🏠 *RETIRADA*\n";
+   msg+="📍 R. Buriti, 38 — Centro\n";
+ }
+ msg+="💳 *Pagamento:* "+paymentLabels[payment]+"\n";
+ if(payment==="pix") msg+="   Chave Pix: 55999456798\n";
+ if(payment==="cash" && document.getElementById("changeOption")?.value==="change") msg+="   Troco para: "+document.getElementById("changeFor").value+"\n";
+ msg+="\n💵 *TOTAL: "+money(total()+deliveryFee)+"*";
+
+ const orderPayload={
+   customer:{name,phone},
+   items:cart.map(x=>({name:x.name,price:x.price,qty:x.qty,opts:x.opts||[]})),
+   subtotal:Number(total().toFixed(2)),
+   fulfillment:mode,
+   delivery:mode==="delivery"?{address:document.getElementById("address")?.value||"",number:document.getElementById("number")?.value||"",complement:document.getElementById("complement")?.value||"",neighborhood:document.getElementById("neighborhood")?.value||"",cityuf:document.getElementById("cityuf")?.value||"",cep:document.getElementById("cep")?.value||"",fee:Number(deliveryFee.toFixed(2)),estimatedTime:deliveryTime}:null,
+   pickup:mode==="pickup"?{address:"R. Buriti, 38 — Centro"}:null,
+   payment:{method:payment,changeFor:payment==="cash"&&document.getElementById("changeOption")?.value==="change"?(document.getElementById("changeFor")?.value||""):null},
+   total:Number((total()+deliveryFee).toFixed(2)),
+   status:"Novo",
+   createdAt:new Date().toISOString()
+ };
+ saveOrderToPanel(orderPayload);
+
+ const whatsapp="5555997181726";
+ const url="https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg);
+ window.location.href=url;
+}
+render();update();
+</script>
+</body></html>

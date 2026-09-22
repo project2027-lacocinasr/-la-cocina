@@ -1,0 +1,7 @@
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/cozinha"
+  to = "/cozinha.html"
+  status = 200
