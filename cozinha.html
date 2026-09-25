@@ -1,24 +1,258 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>La Cocina • Cozinha</title>
-<style>body{font-family:Arial,sans-serif;margin:0;background:#f7f3ef;color:#2d2521}header{background:#4d1720;color:#fff;padding:18px;text-align:center;position:sticky;top:0;z-index:5}main{max-width:1000px;margin:auto;padding:12px}.tabs{display:flex;gap:8px;margin:10px 0}.tabs button{flex:1}.tab.active{background:#fff;color:#4d1720}.card{background:#fff;margin:10px 0;padding:14px;border-radius:14px;box-shadow:0 2px 8px #0001}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}.muted{color:#6b625e;font-size:13px}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#eee;margin:3px;font-size:12px}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.items{margin:10px 0}.item{padding:7px 0;border-bottom:1px solid #eee}.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.actions button{border:0;border-radius:8px;padding:9px 10px;font-weight:bold;background:#4d1720;color:white}.actions button.alt{background:#777}.danger{background:#8a2f2f!important}.topline{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}input{padding:11px;border:1px solid #ccc;border-radius:8px;width:160px;box-sizing:border-box}button{cursor:pointer}#login{max-width:430px;margin:35px auto}</style></head>
-<body><header><h1>🍷 La Cocina</h1><div>Painel da cozinha e reservas</div></header><main>
-<section id="login" class="card"><h2>Acesso da equipe</h2><p class="muted">Digite o PIN do painel.</p><input id="pin" type="password" inputmode="numeric" placeholder="PIN"><button onclick="login()">Entrar</button><div id="loginMsg" class="muted"></div></section>
-<section id="app" style="display:none"><div class="topline"><b id="lastUpdate">—</b><button onclick="loadAll()">↻ Atualizar</button></div><div class="tabs"><button id="ordersTab" class="tab active" onclick="showTab('orders')">🍽️ Pedidos</button><button id="resTab" class="tab" onclick="showTab('reservations')">📅 Reservas</button></div><div id="orders"></div><div id="reservations" style="display:none"></div></section>
+<style>
+:root{--wine:#4d1720;--cream:#f7f3ef;--ink:#2d2521;--muted:#6b625e;--line:#eadfd8;--yellow:#e0a91a;--orange:#e47b2d;--green:#2f8b57;--red:#c43d3d;--gray:#777;--darkred:#7b2525}
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:var(--cream);color:var(--ink)}
+header{background:var(--wine);color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:5}
+header h1{margin:0 0 4px;font-size:22px}header div{font-size:13px;opacity:.9}
+main{max-width:1100px;margin:auto;padding:12px}
+.card{background:#fff;margin:10px 0;padding:14px;border-radius:14px;box-shadow:0 2px 8px #0001}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.muted{color:var(--muted);font-size:13px}.row{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.topline{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;margin:10px 0}.tabs button{flex:1}
+button{cursor:pointer;border:0;border-radius:9px;padding:10px 12px;font-weight:bold;background:var(--wine);color:#fff}
+button.alt{background:#777}.danger{background:var(--darkred)!important}
+input,select{padding:10px;border:1px solid #ccc;border-radius:9px;background:#fff}
+#login{max-width:430px;margin:35px auto}.loginrow{display:flex;gap:8px}.loginrow input{flex:1}
+.tab.active{background:#fff;color:var(--wine);border:1px solid var(--wine)}
+.pill{display:inline-block;padding:6px 9px;border-radius:99px;background:#eee;margin:2px;font-size:12px;font-weight:bold}
+.status-new{background:#fff0a8}.status-prep{background:#ffd1a6}.status-ready{background:#bfe8ce}.status-late{background:#f2aaaa;color:#7a1010}.status-done{background:#ddd;color:#555}.status-cancel{background:#8a2f2f;color:#fff}
+.items{margin:10px 0}.item{padding:8px 0;border-bottom:1px solid var(--line)}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.actions button{font-size:12px;padding:9px 10px}
+.section-title{margin:8px 0}.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
+.summary .mini{background:#fff;border-radius:12px;padding:12px;border:1px solid var(--line)}
+.mini b{display:block;font-size:20px;margin-top:4px}
+.notice{padding:10px 12px;border-radius:10px;background:#fff7d6;border:1px solid #ead48a;margin:8px 0}
+.hidden{display:none!important}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.loginrow{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><h1>🍷 La Cocina</h1><div>Painel da cozinha e reservas</div></header>
+<main>
+<section id="login" class="card">
+<h2>Acesso da equipe</h2><p class="muted">Digite o PIN do painel.</p>
+<div class="loginrow"><input id="pin" type="password" inputmode="numeric" placeholder="PIN"><button onclick="login()">Entrar</button></div>
+<div id="loginMsg" class="muted"></div>
+</section>
+
+<section id="app" style="display:none">
+<div class="topline"><b id="lastUpdate">—</b><button onclick="loadAll()">↻ Atualizar</button></div>
+
+<div class="tabs">
+<button id="ordersTab" class="tab active" onclick="showTab('orders')">🍽️ Pedidos</button>
+<button id="resTab" class="tab" onclick="showTab('reservations')">📅 Reservas</button>
+</div>
+
+<div id="orders">
+  <div class="filters">
+    <button onclick="setOrderView('operational')">Pedidos em andamento</button>
+    <button class="alt" onclick="setOrderView('history')">Histórico / fechamento</button>
+  </div>
+  <div id="orderControls"></div>
+  <div id="orderSummary"></div>
+  <div id="orderList"></div>
+</div>
+
+<div id="reservations" style="display:none">
+  <div id="reservationControls"></div>
+  <div id="reservationSummary"></div>
+  <div id="reservationList"></div>
+</div>
+</section>
 </main>
+
 <script>
 let PIN=sessionStorage.getItem('laCocinaPin')||'';
-const statuses=['Novo','Em preparo','Pronto','Concluído'];
+let ALL_ORDERS=[], ALL_RES=[];
+let orderView='operational';
+let selectedOrderDate=todayKey();
+let selectedResDate=todayKey();
+
+function todayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function auth(){return {'x-kitchen-pin':PIN}}
-function login(){PIN=document.getElementById('pin').value.trim();if(!PIN){return}sessionStorage.setItem('laCocinaPin',PIN);loadAll().then(ok=>{if(ok){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';}})}
-async function api(url,opts={}){opts.headers={...(opts.headers||{}),...auth()};const r=await fetch(url,opts);if(r.status===401)throw new Error('PIN');if(!r.ok)throw new Error('Erro');return r.json()}
+function login(){
+  PIN=document.getElementById('pin').value.trim();
+  if(!PIN)return;
+  sessionStorage.setItem('laCocinaPin',PIN);
+  loadAll().then(ok=>{
+    if(ok){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';}
+  });
+}
+async function api(url,opts={}){
+  opts.headers={...(opts.headers||{}),...auth()};
+  const r=await fetch(url,opts);
+  if(r.status===401)throw new Error('PIN');
+  if(!r.ok)throw new Error('Erro');
+  return r.json();
+}
 function money(n){return Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
-function showTab(tab){document.getElementById('orders').style.display=tab==='orders'?'block':'none';document.getElementById('reservations').style.display=tab==='reservations'?'block':'none';document.getElementById('ordersTab').classList.toggle('active',tab==='orders');document.getElementById('resTab').classList.toggle('active',tab==='reservations')}
-async function loadAll(){try{const [o,r]=await Promise.all([api('/.netlify/functions/get-orders'),api('/.netlify/functions/get-reservations')]);renderOrders(o.orders||[]);renderReservations(r.reservations||[]);document.getElementById('lastUpdate').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});return true}catch(e){if(e.message==='PIN'){document.getElementById('loginMsg').textContent='PIN incorreto ou não configurado.';sessionStorage.removeItem('laCocinaPin');return false}document.getElementById('loginMsg').textContent='Não foi possível carregar o painel.';return false}}
-function renderOrders(list){const el=document.getElementById('orders');if(!list.length){el.innerHTML='<div class="card">Nenhum pedido registrado.</div>';return}el.innerHTML='<div class="grid">'+list.map(o=>{const c=o.customer||{};const d=o.delivery||{};return `<div class="card"><div class="row"><b>Pedido #${o.id.slice(0,6).toUpperCase()}</b><span class="pill">${o.status||'Novo'}</span></div><div class="muted">${new Date(o.createdAt).toLocaleString('pt-BR')}</div><p><b>${c.name||''}</b> • ${c.phone||''}</p><div class="items">${(o.items||[]).map(x=>`<div class="item"><b>${x.qty}x ${x.name}</b> — ${money(x.price*x.qty)}<div class="muted">${(x.opts||[]).join(' • ')}</div></div>`).join('')}</div>${o.fulfillment==='delivery'?`<p>🚗 <b>Entrega</b><br>${d.address||''}, ${d.number||''}${d.complement?' — '+d.complement:''}<br>${d.neighborhood||''} — ${d.cityuf||''} • CEP ${d.cep||''}<br>Taxa ${money(d.fee)} • Previsão ${d.estimatedTime||''}</p>`:'<p>🏠 <b>Retirada</b><br>R. Buriti, 38 — Centro</p>'}<p>💳 ${o.payment?.method||''}${o.payment?.changeFor?' • Troco para '+o.payment.changeFor:''}</p><div class="row"><b>TOTAL ${money(o.total)}</b></div><div class="actions">${statuses.map(s=>`<button class="${s==='Concluído'?'alt':''}" onclick="updateOrder('${o.id}','${s}')">${s}</button>`).join('')}</div></div>`}).join('')+'</div>'}
-function renderReservations(list){const el=document.getElementById('reservations');if(!list.length){el.innerHTML='<div class="card">Nenhuma reserva registrada.</div>';return}el.innerHTML='<div class="grid">'+list.map(r=>`<div class="card"><div class="row"><b>📅 ${r.dateBR||r.date}</b><span class="pill">${r.status||'Aguardando'}</span></div><h3>${r.time||''}</h3><p><b>${r.name||''}</b> • ${r.people||''} pessoa(s)<br>📱 ${r.phone||''}</p>${r.note?`<p class="muted">📝 ${r.note}</p>`:''}<div class="actions"><button onclick="updateReservation('${r.id}','Confirmada')">Confirmar</button><button class="alt" onclick="updateReservation('${r.id}','Aguardando')">Aguardando</button><button class="danger" onclick="updateReservation('${r.id}','Cancelada')">Cancelar</button></div></div>`).join('')+'</div>'}
-async function updateOrder(id,status){try{await api('/.netlify/functions/update-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});await loadAll();}catch(e){alert(e.message==='PIN'?'PIN incorreto ou expirado. Faça login novamente.':'Não foi possível atualizar o pedido. Tente novamente.');}}
-async function updateReservation(id,status){try{await api('/.netlify/functions/update-reservation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});await loadAll();}catch(e){alert(e.message==='PIN'?'PIN incorreto ou expirado. Faça login novamente.':'Não foi possível atualizar a reserva. Tente novamente.');}}
-if(PIN){document.getElementById('pin').value=PIN;loadAll().then(ok=>{if(ok){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block'}})}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function showTab(tab){
+  document.getElementById('orders').style.display=tab==='orders'?'block':'none';
+  document.getElementById('reservations').style.display=tab==='reservations'?'block':'none';
+  document.getElementById('ordersTab').classList.toggle('active',tab==='orders');
+  document.getElementById('resTab').classList.toggle('active',tab==='reservations');
+}
+function setOrderView(v){orderView=v;renderOrders(ALL_ORDERS)}
+function orderDate(o){
+  if(!o.createdAt)return '';
+  const d=new Date(o.createdAt);
+  return isNaN(d)?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dueTime(o){
+  if(o.fulfillment==='delivery' && o.delivery?.estimatedTime){
+    const t=String(o.delivery.estimatedTime).match(/(\d{1,2}):(\d{2})/);
+    if(t){
+      const d=new Date(o.createdAt||Date.now());
+      d.setHours(Number(t[1]),Number(t[2]),0,0);
+      return d;
+    }
+  }
+  if(o.createdAt){
+    const d=new Date(o.createdAt);
+    d.setMinutes(d.getMinutes()+45);
+    return d;
+  }
+  return null;
+}
+function isLate(o){
+  if(!['Novo','Em preparo'].includes(o.status||'Novo'))return false;
+  const due=dueTime(o); return !!due && new Date()>due;
+}
+function statusClass(o){
+  if(isLate(o))return 'status-late';
+  if(o.status==='Novo')return 'status-new';
+  if(o.status==='Em preparo')return 'status-prep';
+  if(o.status==='Pronto')return 'status-ready';
+  if(o.status==='Concluído')return 'status-done';
+  if(o.status==='Cancelada'||o.status==='Cancelado')return 'status-cancel';
+  return '';
+}
+function statusLabel(o){return isLate(o)?'Atrasado':(o.status||'Novo')}
+function formatDateTime(v){return v?new Date(v).toLocaleString('pt-BR'):'—'}
+
+async function loadAll(){
+  try{
+    const [o,r]=await Promise.all([api('/.netlify/functions/get-orders'),api('/.netlify/functions/get-reservations')]);
+    ALL_ORDERS=o.orders||[]; ALL_RES=r.reservations||[];
+    renderOrders(ALL_ORDERS); renderReservations(ALL_RES);
+    document.getElementById('lastUpdate').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return true;
+  }catch(e){
+    if(e.message==='PIN'){document.getElementById('loginMsg').textContent='PIN incorreto ou não configurado.';sessionStorage.removeItem('laCocinaPin');return false}
+    document.getElementById('loginMsg').textContent='Não foi possível carregar o painel.';return false;
+  }
+}
+
+function renderOrders(list){
+  const controls=document.getElementById('orderControls');
+  const filteredDate=list.filter(o=>orderDate(o)===selectedOrderDate);
+  const active=filteredDate.filter(o=>!['Concluído','Cancelada','Cancelado'].includes(o.status||''));
+  const historical=filteredDate.filter(o=>['Concluído','Cancelada','Cancelado'].includes(o.status||''));
+  const shown=orderView==='operational'?active:historical;
+
+  controls.innerHTML=`<div class="filters">
+    <label>Data dos pedidos: <input type="date" value="${selectedOrderDate}" onchange="selectedOrderDate=this.value;renderOrders(ALL_ORDERS)"></label>
+  </div>`;
+
+  const total=filteredDate.reduce((s,o)=>s+Number(o.total||0),0);
+  const concluded=historical.filter(o=>o.status==='Concluído').reduce((s,o)=>s+Number(o.total||0),0);
+  const cancelled=historical.filter(o=>['Cancelada','Cancelado'].includes(o.status)).reduce((s,o)=>s+Number(o.total||0),0);
+  document.getElementById('orderSummary').innerHTML=`<div class="summary">
+    <div class="mini">Pedidos do dia<b>${filteredDate.length}</b></div>
+    <div class="mini">Em andamento<b>${active.length}</b></div>
+    <div class="mini">Concluídos<b>${historical.filter(o=>o.status==='Concluído').length}</b></div>
+    <div class="mini">Vendas concluídas<b>${money(concluded)}</b></div>
+    <div class="mini">Cancelados<b>${historical.filter(o=>['Cancelada','Cancelado'].includes(o.status)).length}</b></div>
+    <div class="mini">Valor cancelado<b>${money(cancelled)}</b></div>
+  </div>`;
+
+  const el=document.getElementById('orderList');
+  if(!shown.length){el.innerHTML='<div class="card">Nenhum pedido nesta visão para a data selecionada.</div>';return}
+
+  shown.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  el.innerHTML='<div class="grid">'+shown.map(o=>{
+    const c=o.customer||{},d=o.delivery||{}, late=isLate(o);
+    const id=esc(o.id);
+    const buttons=['Novo','Em preparo','Pronto','Concluído'].map(s=>`<button class="${s==='Concluído'?'alt':''}" onclick="updateOrder('${id}','${s}')">${s}</button>`).join('');
+    const due=dueTime(o);
+    const dueText=due?due.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
+    return `<div class="card">
+      <div class="row"><b>Pedido #${esc(String(o.id||'').slice(0,6).toUpperCase())}</b><span class="pill ${statusClass(o)}">${statusLabel(o)}</span></div>
+      <div class="muted">Entrada: ${formatDateTime(o.createdAt)} • Prazo: ${dueText}${late?' • ⚠️ ultrapassou o prazo':''}</div>
+      <p><b>${esc(c.name||'')}</b> • ${esc(c.phone||'')}</p>
+      <div class="items">${(o.items||[]).map(x=>`<div class="item"><b>${esc(x.qty)}x ${esc(x.name)}</b> — ${money(Number(x.price||0)*Number(x.qty||0))}<div class="muted">${esc((x.opts||[]).join(' • '))}</div></div>`).join('')}</div>
+      ${o.fulfillment==='delivery'?`<p>🚗 <b>Entrega</b><br>${esc(d.address||'')}, ${esc(d.number||'')}${d.complement?' — '+esc(d.complement):''}<br>${esc(d.neighborhood||'')} — ${esc(d.cityuf||'')} • CEP ${esc(d.cep||'')}<br>Taxa ${money(d.fee)} • Previsão ${esc(d.estimatedTime||'')}</p>`:'<p>🏠 <b>Retirada</b><br>R. Buriti, 38 — Centro</p>'}
+      <p>💳 ${esc(o.payment?.method||'')}${o.payment?.changeFor?' • Troco para '+esc(o.payment.changeFor):''}</p>
+      <div class="row"><b>TOTAL ${money(o.total)}</b></div>
+      ${orderView==='operational'?`<div class="actions">${buttons}<button class="alt" onclick="notifyCustomer('${id}')">📲 Avisar cliente</button></div>`:''}
+    </div>`;
+  }).join('')+'</div>';
+}
+
+async function updateOrder(id,status){
+  try{
+    await api('/.netlify/functions/update-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+    await loadAll();
+  }catch(e){alert('Não foi possível atualizar o pedido. Verifique o PIN e tente novamente.')}
+}
+
+function notifyCustomer(id){
+  const o=ALL_ORDERS.find(x=>String(x.id)===String(id)); if(!o)return;
+  const phone=String(o.customer?.phone||'').replace(/\D/g,'');
+  if(!phone){alert('Este pedido não tem telefone cadastrado.');return}
+  const code=String(o.id||'').slice(0,6).toUpperCase();
+  const status=statusLabel(o);
+  const text=`Olá! 🍷 Aqui é do La Cocina. Seu pedido #${code} está: ${status}. Se precisar falar conosco, estamos à disposição. ❤️`;
+  window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(text),'_blank');
+}
+
+function renderReservations(list){
+  const controls=document.getElementById('reservationControls');
+  const day=list.filter(r=>String(r.date||'')===selectedResDate);
+  controls.innerHTML=`<div class="filters"><label>Data das reservas: <input type="date" value="${selectedResDate}" onchange="selectedResDate=this.value;renderReservations(ALL_RES)"></label></div>`;
+
+  const slots=[
+    {name:'19h às 21h',people:day.filter(r=>r.time==='19h às 21h').reduce((s,r)=>s+Number(r.people||0),0)},
+    {name:'21h às 23h',people:day.filter(r=>r.time==='21h às 23h').reduce((s,r)=>s+Number(r.people||0),0)}
+  ];
+  const total=slots.reduce((s,x)=>s+x.people,0);
+  document.getElementById('reservationSummary').innerHTML=`<div class="summary">
+    ${slots.map(s=>`<div class="mini">${s.name}<b>${s.people} pessoa(s)</b></div>`).join('')}
+    <div class="mini">Total do dia<b>${total} pessoa(s)</b></div>
+  </div>`;
+
+  const el=document.getElementById('reservationList');
+  if(!day.length){el.innerHTML='<div class="card">Nenhuma reserva nesta data.</div>';return}
+  el.innerHTML='<div class="grid">'+day.map(r=>`<div class="card">
+    <div class="row"><b>📅 ${esc(r.dateBR||r.date)}</b><span class="pill">${esc(r.status||'Aguardando')}</span></div>
+    <h3>${esc(r.time||'')}</h3>
+    <p><b>${esc(r.name||'')}</b> • ${esc(r.people||'')} pessoa(s)<br>📱 ${esc(r.phone||'')}</p>
+    ${r.note?`<p class="muted">📝 ${esc(r.note)}</p>`:''}
+    <div class="actions"><button onclick="updateReservation('${esc(r.id)}','Confirmada')">Confirmar</button><button class="alt" onclick="updateReservation('${esc(r.id)}','Aguardando')">Aguardando</button><button class="danger" onclick="updateReservation('${esc(r.id)}','Cancelada')">Cancelar</button></div>
+  </div>`).join('')+'</div>';
+}
+async function updateReservation(id,status){
+  try{
+    await api('/.netlify/functions/update-reservation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+    await loadAll();
+  }catch(e){alert('Não foi possível atualizar a reserva. Verifique o PIN e tente novamente.')}
+}
+
+if(PIN){
+  document.getElementById('pin').value=PIN;
+  loadAll().then(ok=>{if(ok){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block'}})
+}
 setInterval(()=>{if(document.getElementById('app').style.display!=='none')loadAll()},5000);
-</script></body></html>
+</script>
+</body></html>
